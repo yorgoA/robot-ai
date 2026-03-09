@@ -9,6 +9,19 @@ When connected to a CI pipeline, the suite becomes self-diagnosing. A GitHub Iss
 
 - Python 3.12+
 - Node.js (required by Robot Framework Browser Library / Playwright)
+- The **ShopDemo** application must be running locally. Clone and start it before running any tests:
+
+```bash
+git clone https://github.com/yorgoA/ShopDemo.git
+cd ShopDemo
+npm install
+npm run dev
+```
+
+| Service  | URL                   |
+|----------|-----------------------|
+| Frontend | http://localhost:5173 |
+| Backend  | http://localhost:3000 |
 
 ---
 
