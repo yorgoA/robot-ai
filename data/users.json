@@ -1,0 +1,15 @@
+{
+  "valid_user": {
+    "email": "user@shopdemo.com",
+    "password": "password123"
+  },
+  "invalid_user": {
+    "email": "wrong@shopdemo.com",
+    "password": "wrongpassword"
+  },
+  "checkout": {
+    "name": "Test User",
+    "address": "123 Test Street",
+    "card": "4111111111111111"
+  }
+}

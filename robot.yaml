@@ -1,0 +1,68 @@
+tasks:
+  web-tests:
+    command: robot
+    args:
+      - --outputdir=reports
+      - --listener=scripts/TimestampedReportsListener.py
+      - --variable=HEADLESS:true
+      - --include=ui OR smoke
+      - tests/web
+
+  api-tests:
+    command: robot
+    args:
+      - --outputdir=reports
+      - --listener=scripts/TimestampedReportsListener.py
+      - --include=api
+      - tests/web
+
+  smoke:
+    command: robot
+    args:
+      - --outputdir=reports
+      - --listener=scripts/TimestampedReportsListener.py
+      - --variable=HEADLESS:true
+      - --include=smoke
+      - tests/web
+
+  all-tests:
+    command: robot
+    args:
+      - --outputdir=reports
+      - --listener=scripts/TimestampedReportsListener.py
+      - --variable=HEADLESS:true
+      - tests/web
+
+  dev:
+    command: robot
+    args:
+      - --outputdir=reports
+      - --listener=scripts/TimestampedReportsListener.py
+      - --variable=HEADLESS:false
+      - --variable=BASE_URL:http://localhost:5173
+      - --variable=API_BASE_URL:http://localhost:3000
+      - tests/web
+
+  dom-inspect:
+    command: robot
+    args:
+      - --outputdir=reports
+      - --listener=scripts/TimestampedReportsListener.py
+      - --variable=HEADLESS:true
+      - tests/web/dom_inspector_test.robot
+
+  visual-debug:
+    command: robot
+    args:
+      - --outputdir=reports
+      - --listener=scripts/TimestampedReportsListener.py
+      - --variable=HEADLESS:true
+      - tests/debug/visual_debug_test.robot
+
+  debug-all:
+    command: robot
+    args:
+      - --outputdir=reports
+      - --listener=scripts/TimestampedReportsListener.py
+      - --include=debug
+      - tests

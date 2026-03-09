@@ -1,0 +1,13 @@
+*** Variables ***
+${SEL_CART_ITEM}                [data-testid="cart-item"]
+${SEL_CART_QUANTITY_INPUT}      [data-testid="cart-quantity-input"]
+${SEL_REMOVE_CART_ITEM_BTN}     [data-testid="remove-cart-item-button"]
+${SEL_CART_GRAND_TOTAL}         [data-testid="cart-grand-total"]
+${SEL_CHECKOUT_BUTTON}          [data-testid="checkout-button"]
+${SEL_ORDER_SUCCESS}            [data-testid="order-success"]
+${SEL_ORDER_ID}                 [data-testid="order-id"]
+${SEL_VIEW_ORDERS_BUTTON}       [data-testid="view-orders-button"]
+${SEL_DOWNLOAD_RECEIPT_BTN}     [data-testid="download-receipt-button"]
+${SEL_ORDERS_LIST}              [data-testid="orders-list"]
+${SEL_ORDER_CARD}               [data-testid="order-card"]
+${SEL_ORDER_STATUS}             [data-testid="order-status"]
