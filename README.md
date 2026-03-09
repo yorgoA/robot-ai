@@ -1,4 +1,4 @@
-# robot-mcp
+# robot-ai
 
 Robot Framework QA automation repository for the **ShopDemo** web application.
 
