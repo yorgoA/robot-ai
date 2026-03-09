@@ -1,6 +1,7 @@
 # robot-ai
 
 Robot Framework QA automation repository for the **ShopDemo** web application.
+When connected to a CI pipeline, the suite becomes self-diagnosing. A GitHub Issue triggers `parse_issue.py`, which extracts the affected feature area and determines whether the problem is likely a UI issue, an API issue, or ambiguous. `decide_tests.py` then maps that to the right test layers, and if no existing test covers the reported scenario, `generate_test.py` creates one on the spot. The generated test always runs both layers when the cause is unclear: Playwright intercepts the network call made during the user action so the system can tell whether the API responded correctly or not. If the API was fine but the UI still misbehaved, OpenCV analyses the browser screenshot to detect visual anomalies. `comment_results.py` closes the loop by posting a layered diagnosis back to the issue, identifying a frontend fault, a backend fault, or a clean pass, without any manual intervention.
 
 ---
 
