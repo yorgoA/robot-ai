@@ -1,0 +1,10 @@
+*** Variables ***
+${SEL_PRODUCT_CARD}         [data-testid="product-card"]
+${SEL_PRODUCT_NAME}         [data-testid="product-name"]
+${SEL_PRODUCT_PRICE}        [data-testid="product-price"]
+${SEL_PRODUCT_STOCK}        [data-testid="product-stock"]
+${SEL_ADD_TO_CART_BTN}      [data-testid="add-to-cart-button"]
+${SEL_QUANTITY_INPUT}       [data-testid="quantity-input"]
+${SEL_CART_BADGE}           [data-testid="cart-badge"]
+${SEL_NAV_CART}             [data-testid="nav-cart"]
+${SEL_NAVBAR}               [data-testid="navbar"]
