@@ -3,37 +3,139 @@ comment_results.py
 ------------------
 Posts a Robot Framework test result summary as a comment on a GitHub Issue.
 
+The comment includes:
+  - Pass / fail counts per layer (UI and/or API)
+  - Fault diagnosis: frontend bug / backend bug / ambiguous / all passing
+  - OpenCV visual findings (if a UI test failed and OpenCV was run)
+
+Diagnosis logic:
+  - UI layer FAIL + API layer PASS  → frontend bug
+  - API layer FAIL                  → backend bug
+  - Both FAIL                       → backend bug (API failure propagated to UI)
+  - Both PASS                       → no reproduction (flaky or fixed)
+
 Usage:
-    python scripts/comment_results.py \
-        --repo owner/repo \
-        --issue 42 \
-        --output reports/output.xml
+    python scripts/comment_results.py \\
+        --repo owner/repo \\
+        --issue 42 \\
+        --output-ui  reports/ui/output.xml \\
+        --output-api reports/api/output.xml \\
+        --opencv     reports/opencv_debug_<ts>.png
 
 Environment variables:
     GITHUB_TOKEN  - Personal access token with repo write access.
-
-TODO: Implement Robot Framework output.xml parsing and GitHub comment posting.
 """
 
 import argparse
+import json
 import os
 import sys
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Post Robot Framework results to a GitHub Issue.")
-    parser.add_argument("--repo", required=True, help="GitHub repo in owner/repo format")
-    parser.add_argument("--issue", required=True, type=int, help="Issue number")
-    parser.add_argument("--output", default="reports/output.xml", help="Path to Robot output.xml")
+    parser.add_argument("--repo",       required=True,  help="GitHub repo in owner/repo format")
+    parser.add_argument("--issue",      required=True,  type=int, help="Issue number")
+    parser.add_argument("--output-ui",  default=None,   help="Path to UI layer output.xml")
+    parser.add_argument("--output-api", default=None,   help="Path to API layer output.xml")
+    parser.add_argument("--opencv",     default=None,   help="Path to OpenCV findings JSON (optional)")
     return parser.parse_args()
 
 
 def parse_output_xml(path: str) -> dict:
-    # TODO: Use robot.api to parse output.xml and extract pass/fail counts.
+    """Parse a Robot Framework output.xml and return pass/fail counts."""
+    # TODO: Uncomment when robot package is available.
     # from robot.api import ExecutionResult
     # result = ExecutionResult(path)
-    # return {"total": result.suite.stat.total, "passed": result.suite.stat.passed, "failed": result.suite.stat.failed}
-    raise NotImplementedError("output.xml parsing not yet implemented.")
+    # return {
+    #     "total":  result.suite.stat.total,
+    #     "passed": result.suite.stat.passed,
+    #     "failed": result.suite.stat.failed,
+    # }
+    raise NotImplementedError(f"output.xml parsing not yet implemented for: {path}")
+
+
+def load_opencv_findings(path: str) -> dict | None:
+    """Load OpenCV findings from a JSON file written by OpenCVDebugKeywords."""
+    if not path or not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def diagnose(ui_stats: dict | None, api_stats: dict | None) -> tuple[str, str]:
+    """
+    Returns (diagnosis_key, human_label).
+
+    diagnosis_key: "frontend" | "backend" | "both" | "passing" | "unknown"
+    """
+    ui_failed  = ui_stats  is not None and ui_stats["failed"]  > 0
+    api_failed = api_stats is not None and api_stats["failed"] > 0
+
+    if not ui_failed and not api_failed:
+        return "passing", "All tests passed — issue could not be reproduced"
+    if api_failed:
+        return "backend",  "Backend fault — API layer returned unexpected results"
+    if ui_failed and not api_failed:
+        return "frontend", "Frontend fault — API responded correctly but UI behaved incorrectly"
+    return "unknown", "Diagnosis inconclusive"
+
+
+def build_comment(
+    issue_number: int,
+    ui_stats:  dict | None,
+    api_stats: dict | None,
+    opencv:    dict | None,
+) -> str:
+    diagnosis_key, diagnosis_label = diagnose(ui_stats, api_stats)
+
+    diagnosis_icons = {
+        "passing":  "✅",
+        "frontend": "🖥️  Frontend",
+        "backend":  "⚙️  Backend",
+        "unknown":  "❓",
+    }
+    icon = diagnosis_icons.get(diagnosis_key, "❓")
+
+    lines = [
+        f"## {icon} — Automated QA Report (Issue #{issue_number})",
+        "",
+        f"**Diagnosis:** {diagnosis_label}",
+        "",
+    ]
+
+    # Per-layer result tables
+    for label, stats in [("UI Layer", ui_stats), ("API Layer", api_stats)]:
+        if stats is None:
+            continue
+        status = "✅ PASS" if stats["failed"] == 0 else "❌ FAIL"
+        lines += [
+            f"### {label} — {status}",
+            "",
+            "| Status | Count |",
+            "|--------|-------|",
+            f"| Passed | {stats['passed']} |",
+            f"| Failed | {stats['failed']} |",
+            f"| Total  | {stats['total']}  |",
+            "",
+        ]
+
+    # OpenCV findings (only relevant for frontend/unknown diagnosis)
+    if opencv and opencv.get("total_findings", 0) > 0:
+        lines += [
+            "### 🔍 OpenCV Visual Analysis",
+            "",
+            f"- Error regions detected: **{opencv['error_regions']}**",
+            f"- Warning regions detected: **{opencv['warning_regions']}**",
+            f"- Modal / bordered boxes: **{opencv['bordered_boxes']}**",
+            f"- Annotated screenshot: `{opencv.get('annotated_image', 'N/A')}`",
+            "",
+        ]
+    elif diagnosis_key == "frontend":
+        lines.append("> No visual anomalies detected by OpenCV — the issue may be a silent state/logic bug.\n")
+
+    lines.append("_Automated report generated by robot-ai._")
+    return "\n".join(lines)
 
 
 def post_comment(repo: str, issue_number: int, body: str):
@@ -44,27 +146,27 @@ def post_comment(repo: str, issue_number: int, body: str):
     raise NotImplementedError("GitHub comment posting not yet implemented.")
 
 
-def build_comment(stats: dict, issue_number: int) -> str:
-    icon = "✅" if stats["failed"] == 0 else "❌"
-    return (
-        f"## {icon} Robot Framework Test Results (Issue #{issue_number})\n\n"
-        f"| Status | Count |\n|--------|-------|\n"
-        f"| Passed | {stats['passed']} |\n"
-        f"| Failed | {stats['failed']} |\n"
-        f"| Total  | {stats['total']} |\n\n"
-        "_Automated report generated by shopdemo-qa-ai._"
-    )
-
-
 def main():
     args = parse_args()
+
     try:
-        stats = parse_output_xml(args.output)
-        comment = build_comment(stats, args.issue)
+        ui_stats  = parse_output_xml(args.output_ui)  if args.output_ui  else None
+        api_stats = parse_output_xml(args.output_api) if args.output_api else None
+    except NotImplementedError as exc:
+        print(f"[comment_results] {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    opencv = load_opencv_findings(args.opencv)
+    comment = build_comment(args.issue, ui_stats, api_stats, opencv)
+
+    try:
         post_comment(args.repo, args.issue, comment)
         print(f"[comment_results] Comment posted to issue #{args.issue}.")
     except NotImplementedError as exc:
         print(f"[comment_results] {exc}", file=sys.stderr)
+        # Print the comment to stdout so CI can echo it for debugging
+        print("\n--- Preview of comment that would be posted ---")
+        print(comment)
         sys.exit(1)
 
 
