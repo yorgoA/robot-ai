@@ -1,7 +1,26 @@
 # robot-ai
 
-Robot Framework QA automation repository for the **ShopDemo** web application.
-When connected to a CI pipeline, the suite becomes self-diagnosing. A GitHub Issue triggers `parse_issue.py`, which extracts the affected feature area and determines whether the problem is likely a UI issue, an API issue, or ambiguous. `decide_tests.py` then maps that to the right test layers, and if no existing test covers the reported scenario, `generate_test.py` creates one on the spot. The generated test always runs both layers when the cause is unclear: Playwright intercepts the network call made during the user action so the system can tell whether the API responded correctly or not. If the API was fine but the UI still misbehaved, OpenCV analyses the browser screenshot to detect visual anomalies. `comment_results.py` closes the loop by posting a layered diagnosis back to the issue, identifying a frontend fault, a backend fault, or a clean pass, without any manual intervention.
+Robot Framework QA automation repository for the **ShopDemo** web application, with an
+issue-driven pipeline layered on top: open a GitHub Issue, and it gets triaged and tested
+automatically.
+
+`parse_issue.py` reads the issue title/body/labels and classifies it — which feature area,
+and whether it's likely a UI issue, an API issue, or ambiguous between the two. `decide_tests.py`
+maps that to the matching test tags. From there, one of two things happens:
+
+- **The feature already has test coverage** — the matching tests run for real, and
+  `comment_results.py` posts a genuine pass/fail diagnosis back to the issue (frontend fault,
+  backend fault, or clean pass), no manual step required.
+- **Nothing covers that feature yet** — `generate_test.py` scaffolds a starting test (UI and/or
+  API, depending on the issue) instead of guessing at a result. A freshly generated test has no
+  real assertions yet, so running it would just report a false "all clear"; the bot says as much
+  and asks for the reproduction steps to be filled in, then diagnoses it automatically on the
+  next run.
+
+`scripts/triage_issue.py` is what actually wires this together end to end, and
+`.github/workflows/issue-triage.yml` runs it whenever an issue is opened or labelled. Locally,
+`scripts/detect_coverage.py` shows the same coverage picture that `decide_tests.py` uses to
+make that call.
 
 ---
 
@@ -44,33 +63,37 @@ By default tests target local development servers:
 | `API_BASE_URL`  | `http://localhost:3000`   |
 
 
-## Run UI tests
+## Run tests
+
+The easiest way is via the named tasks in [`robot.yaml`](robot.yaml):
 
 ```bash
-# All UI tests (headless)
-robot --outputdir reports tests/ui
+python scripts/run_task.py --list          # see what's available
+python scripts/run_task.py smoke           # fast, critical-path tests
+python scripts/run_task.py web-tests       # all UI tests
+python scripts/run_task.py api-tests       # all API tests
+python scripts/run_task.py all-tests       # everything except debug/inspector tools
+python scripts/run_task.py dev             # headed, against localhost, for local debugging
+```
 
-# Headed (useful for debugging)
-robot --outputdir reports --variable HEADLESS:false tests/ui
+Every task also accepts extra `robot` arguments after `--`, e.g.
+`python scripts/run_task.py web-tests -- --include login`.
+
+Equivalent plain `robot` commands, if you'd rather not go through the task runner
+(all UI and API suites live under `tests/web/`, split by tag):
+
+```bash
+# All tests (headless)
+robot --outputdir reports --exclude debug tests/web
+
+# Headed
+robot --outputdir reports --variable HEADLESS:false --exclude debug tests/web
 
 # Smoke tests only
-robot --outputdir reports --include smoke tests/ui
-```
+robot --outputdir reports --include smoke tests/web
 
----
-
-## Run API tests
-
-```bash
-robot --outputdir reports tests/api
-```
-
----
-
-## Run all tests
-
-```bash
-robot --outputdir reports --variable HEADLESS:true tests/
+# API layer only
+robot --outputdir reports --include api tests/web
 ```
 
 ---
@@ -84,15 +107,17 @@ After a run, open `reports/"name_of_test/report.html` in a browser.
 ## Project structure
 
 ```
-Robot-mcp/
+robot-ai/
 ├── tests/
 │   ├── web/
 │   │   ├── auth/                    # Login / auth UI scenarios
 │   │   ├── catalog/                 # Product catalog UI scenarios
 │   │   ├── cart/                    # Cart & checkout UI scenarios
-│   │   └── api/                     # REST API scenarios (auth, products, checkout)
-│   └── debug/
-│       └── visual_debug_test.robot  # OpenCV screenshot error detection
+│   │   ├── api/                     # REST API scenarios (auth, products, checkout)
+│   │   └── dom_inspector_test.robot # Selector-recommendation debug tool (tagged `debug`)
+│   ├── debug/
+│   │   └── visual_debug_test.robot  # OpenCV screenshot error detection (tagged `debug`)
+│   └── generated/                   # Issue-driven scaffolds from generate_test.py (git-ignored)
 ├── resources/
 │   ├── keywords/                    # Atomic Given / When / Then keywords
 │   ├── common_test_cases/           # Reusable multi-step flows
@@ -106,49 +131,56 @@ Robot-mcp/
 ├── scripts/
 │   ├── TimestampedReportsListener.py  # Auto-organises reports/<suite>/<timestamp>/
 │   ├── run_robot.sh                   # Shell wrapper for timestamped runs
-│   ├── comment_results.py             # GitHub Issue workflow helpers
+│   ├── run_task.py                    # Runs a named task from robot.yaml
+│   ├── triage_issue.py                # End-to-end issue pipeline (see below)
+│   ├── parse_issue.py
 │   ├── decide_tests.py
-│   ├── detect_coverage.py
-│   └── parse_issue.py
+│   ├── generate_test.py
+│   ├── comment_results.py
+│   └── detect_coverage.py
 ├── data/
 │   └── users.json                   # Test data
 ├── .github/
-│   ├── workflows/                   # GitHub Actions CI pipelines
+│   ├── workflows/                   # CI (push/PR) + the issue-triage pipeline
 │   └── ISSUE_TEMPLATE/              # Bug report template
 ├── reports/                         # Robot Framework output (git-ignored)
 ├── requirements.txt
-└── robot.yaml                       # Named task shortcuts (web-tests, api-tests, dom-inspect …)
+└── robot.yaml                       # Named task definitions, run via scripts/run_task.py
 ```
 
 ---
 
-## GitHub Issue–driven workflow (planned)
-
-The `scripts/` directory contains four placeholder scripts that will power
-an issue-driven test execution loop:
-
-| Script                  | Purpose |
-|-------------------------|---------|
-| `parse_issue.py`        | Fetches a GitHub Issue and extracts area, labels, and description |
-| `decide_tests.py`       | Maps issue data to Robot Framework tag/path selectors |
-| `comment_results.py`    | Posts a pass/fail summary back to the issue as a comment |
-| `detect_coverage.py`    | Scans test files and surfaces areas with no automated coverage |
-
-**Planned flow:**
+## GitHub Issue–driven workflow
 
 ```
 GitHub Issue opened / labelled
         │
         ▼
-parse_issue.py  ──►  decide_tests.py  ──►  robot (targeted run)
-                                                │
-                                                ▼
-                                      comment_results.py
-                                      (posts results to issue)
+parse_issue.py  ──►  decide_tests.py
+                          │
+              ┌───────────┴───────────┐
+        covered already          nothing covers it
+              │                       │
+              ▼                       ▼
+      robot (targeted run)     generate_test.py
+              │                 (scaffolds a test,
+              ▼                  asks for the repro
+     comment_results.py          steps, stops there)
+   (posts a real diagnosis)
 ```
 
-To activate this workflow, set the `GITHUB_TOKEN` environment variable and
-implement the `TODO` blocks in each script.
+`scripts/triage_issue.py` runs this whole thing as one process — it's what
+[`.github/workflows/issue-triage.yml`](.github/workflows/issue-triage.yml) invokes whenever an
+issue is opened or labelled, using the repo's own `GITHUB_TOKEN` (no personal token needed for
+same-repo issues). Run it locally against a real issue with:
+
+```bash
+GITHUB_TOKEN=<a token with repo read/write> \
+  python scripts/triage_issue.py --repo owner/repo --issue 42
+```
+
+Without `GITHUB_TOKEN` set, or without write access, it still runs the tests and prints the
+comment it would have posted instead of failing outright.
 
 ---
 

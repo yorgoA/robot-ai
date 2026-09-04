@@ -8,6 +8,9 @@ PyGithub==2.3.0
 requests==2.32.5
 python-dotenv==1.0.1
 
+# robot.yaml task runner (scripts/run_task.py)
+PyYAML==6.0.3
+
 # DOM Inspector
 beautifulsoup4==4.14.3
 

@@ -9,7 +9,9 @@ Resource            ../../../resources/keywords/given.resource
 Resource            ../../../resources/keywords/when.resource
 Resource            ../../../resources/keywords/then.resource
 
-Suite Setup         Open Browser To App
+Suite Setup         Run Keywords
+...                 Ensure The Test Account Exists    AND
+...                 Open Browser To App
 Suite Teardown      Close Browser Session
 Test Setup          Capture Step Start
 Test Teardown       Run Keyword If Test Failed    Take Screenshot On Failure

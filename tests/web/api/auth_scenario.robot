@@ -8,7 +8,9 @@ Resource            ../../../resources/keywords/given.resource
 Resource            ../../../resources/keywords/when.resource
 Resource            ../../../resources/keywords/then.resource
 
-Suite Setup         I Create An API Session
+Suite Setup         Run Keywords
+...                 I Create An API Session    AND
+...                 Ensure The Test Account Exists
 Test Setup          Log    --- ${TEST NAME} ---    console=True
 Test Teardown       Run Keyword If Test Failed    Log    STEP FAILED\: ${TEST NAME}    console=True
 

@@ -1,0 +1,54 @@
+name: Robot Framework Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: rfbrowser init
+
+      - name: Start ShopDemo
+        run: |
+          git clone --depth 1 "https://github.com/${{ github.repository_owner }}/ShopDemo.git" ../ShopDemo
+          cd ../ShopDemo
+          npm install
+          nohup npm run dev > /tmp/shopdemo.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/health > /dev/null && curl -sf http://localhost:5173 > /dev/null; then
+              echo "ShopDemo is up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "ShopDemo did not come up in time"
+          cat /tmp/shopdemo.log
+          exit 1
+
+      - name: Run tests
+        run: robot --outputdir reports --exclude debug tests/web
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: robot-report
+          path: reports/
+          retention-days: 30

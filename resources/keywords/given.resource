@@ -59,7 +59,7 @@ I Create An API Session
     Create Session    shopdemo    ${API_BASE_URL}    headers=${API_HEADERS}    verify=True
 
 I Am Authenticated To The API
-    I Create An API Session
+    Ensure The Test Account Exists
     ${body}=    Create Dictionary    email=${VALID_EMAIL}    password=${VALID_PASSWORD}
     ${res}=     POST On Session      shopdemo    /login    json=${body}
     The Response Status Is    ${res}    200
@@ -69,3 +69,16 @@ I Am Authenticated To The API
     ...    Accept=application/json
     ...    Authorization=Bearer ${token}
     Create Session    shopdemo_auth    ${API_BASE_URL}    headers=${auth_headers}    verify=True
+
+Ensure The Test Account Exists
+    [Documentation]    Registers the shared QA test account via the API if it doesn't already
+    ...                exist yet. Safe to call from any suite in any order - this makes the
+    ...                whole framework runnable against a freshly-seeded ShopDemo instance with
+    ...                no manual account setup. A 409 (already registered) is the expected
+    ...                steady state once the account has been created once.
+    I Create An API Session
+    ${body}=    Create Dictionary    email=${VALID_EMAIL}    password=${VALID_PASSWORD}
+    ${res}=     POST On Session    shopdemo    /register    json=${body}    expected_status=any
+    IF    ${res.status_code} not in [201, 409]
+        Fail    Could not prepare the shared test account (HTTP ${res.status_code}): ${res.text}
+    END

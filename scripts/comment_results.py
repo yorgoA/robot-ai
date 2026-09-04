@@ -44,15 +44,15 @@ def parse_args():
 
 def parse_output_xml(path: str) -> dict:
     """Parse a Robot Framework output.xml and return pass/fail counts."""
-    # TODO: Uncomment when robot package is available.
-    # from robot.api import ExecutionResult
-    # result = ExecutionResult(path)
-    # return {
-    #     "total":  result.suite.stat.total,
-    #     "passed": result.suite.stat.passed,
-    #     "failed": result.suite.stat.failed,
-    # }
-    raise NotImplementedError(f"output.xml parsing not yet implemented for: {path}")
+    from robot.api import ExecutionResult
+
+    result = ExecutionResult(path)
+    stat = result.suite.statistics
+    return {
+        "total":  stat.total,
+        "passed": stat.passed,
+        "failed": stat.failed,
+    }
 
 
 def load_opencv_findings(path: str) -> dict | None:
@@ -139,22 +139,24 @@ def build_comment(
 
 
 def post_comment(repo: str, issue_number: int, body: str):
-    # TODO: Post comment via PyGithub.
-    # from github import Github
-    # g = Github(os.environ["GITHUB_TOKEN"])
-    # g.get_repo(repo).get_issue(issue_number).create_comment(body)
-    raise NotImplementedError("GitHub comment posting not yet implemented.")
+    from github import Github, GithubException
+
+    token = os.environ.get("GITHUB_TOKEN")
+    if not token:
+        raise RuntimeError("GITHUB_TOKEN environment variable is required to post a comment.")
+
+    gh = Github(token)
+    try:
+        gh.get_repo(repo).get_issue(issue_number).create_comment(body)
+    except GithubException as exc:
+        raise RuntimeError(f"GitHub API error posting to {repo}#{issue_number}: {exc.data.get('message', exc)}") from exc
 
 
 def main():
     args = parse_args()
 
-    try:
-        ui_stats  = parse_output_xml(args.output_ui)  if args.output_ui  else None
-        api_stats = parse_output_xml(args.output_api) if args.output_api else None
-    except NotImplementedError as exc:
-        print(f"[comment_results] {exc}", file=sys.stderr)
-        sys.exit(1)
+    ui_stats  = parse_output_xml(args.output_ui)  if args.output_ui  else None
+    api_stats = parse_output_xml(args.output_api) if args.output_api else None
 
     opencv = load_opencv_findings(args.opencv)
     comment = build_comment(args.issue, ui_stats, api_stats, opencv)
@@ -162,7 +164,7 @@ def main():
     try:
         post_comment(args.repo, args.issue, comment)
         print(f"[comment_results] Comment posted to issue #{args.issue}.")
-    except NotImplementedError as exc:
+    except RuntimeError as exc:
         print(f"[comment_results] {exc}", file=sys.stderr)
         # Print the comment to stdout so CI can echo it for debugging
         print("\n--- Preview of comment that would be posted ---")

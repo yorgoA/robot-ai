@@ -52,6 +52,3 @@ class TimestampedReportsListener:
 
         if moved:
             print(f"\n  Reports → {dest}/")
-            report = os.path.join(dest, "report.html")
-            if os.path.exists(report):
-                os.system(f"open '{report}'")

@@ -1,0 +1,61 @@
+name: Issue-Driven Test Triage
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: rfbrowser init
+
+      - name: Start ShopDemo
+        run: |
+          git clone --depth 1 "https://github.com/${{ github.repository_owner }}/ShopDemo.git" ../ShopDemo
+          cd ../ShopDemo
+          npm install
+          nohup npm run dev > /tmp/shopdemo.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/health > /dev/null && curl -sf http://localhost:5173 > /dev/null; then
+              echo "ShopDemo is up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "ShopDemo did not come up in time"
+          cat /tmp/shopdemo.log
+          exit 1
+
+      - name: Triage and diagnose the issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          python scripts/triage_issue.py
+          --repo "${{ github.repository }}"
+          --issue "${{ github.event.issue.number }}"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: triage-report
+          path: reports/
+          retention-days: 30

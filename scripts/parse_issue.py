@@ -86,20 +86,42 @@ def detect_area_and_layers(labels: list[str], title: str, body: str) -> tuple[st
 
 
 def detect_feature(labels: list[str], title: str, body: str) -> str:
+    """
+    Scores each feature by how many of its distinct keywords appear in the
+    text and returns the best match. Picking the first match instead (e.g. by
+    dict order) misclassifies issues that mention more than one feature's
+    keywords - "Add to cart button does nothing on the product page" mentions
+    catalog's "product" but is clearly a cart issue, and should score higher
+    for cart (2 keyword hits: "cart", "add to cart") than catalog (1: "product").
+    """
     text = " ".join([title, body] + labels).lower()
-    for feature, keywords in _FEATURE_MAP.items():
-        if any(kw in text for kw in keywords):
-            return feature
-    return "unknown"
+
+    scores = {
+        feature: sum(1 for kw in keywords if kw in text)
+        for feature, keywords in _FEATURE_MAP.items()
+    }
+    best_feature, best_score = max(scores.items(), key=lambda item: item[1])
+    return best_feature if best_score > 0 else "unknown"
 
 
 def fetch_issue(repo: str, issue_number: int) -> dict:
-    # TODO: Replace stub with real GitHub API call using PyGithub.
-    # from github import Github
-    # g = Github(os.environ["GITHUB_TOKEN"])
-    # issue = g.get_repo(repo).get_issue(issue_number)
-    # return {"title": issue.title, "body": issue.body or "", "labels": [l.name for l in issue.labels]}
-    raise NotImplementedError("GitHub integration not yet implemented. Set GITHUB_TOKEN and uncomment PyGithub code.")
+    from github import Github, GithubException
+
+    token = os.environ.get("GITHUB_TOKEN")
+    if not token:
+        raise RuntimeError("GITHUB_TOKEN environment variable is required to fetch a GitHub issue.")
+
+    gh = Github(token)
+    try:
+        issue = gh.get_repo(repo).get_issue(issue_number)
+    except GithubException as exc:
+        raise RuntimeError(f"GitHub API error fetching {repo}#{issue_number}: {exc.data.get('message', exc)}") from exc
+
+    return {
+        "title": issue.title,
+        "body": issue.body or "",
+        "labels": [label.name for label in issue.labels],
+    }
 
 
 def main():
@@ -107,7 +129,7 @@ def main():
 
     try:
         data = fetch_issue(args.repo, args.issue)
-    except NotImplementedError as exc:
+    except RuntimeError as exc:
         print(f"[parse_issue] {exc}", file=sys.stderr)
         sys.exit(1)
 

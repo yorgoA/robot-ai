@@ -31,6 +31,7 @@ tasks:
       - --outputdir=reports
       - --listener=scripts/TimestampedReportsListener.py
       - --variable=HEADLESS:true
+      - --exclude=debug
       - tests/web
 
   dev:

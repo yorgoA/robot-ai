@@ -8,6 +8,7 @@ Resource         ../../keywords/then.resource
 *** Keywords ***
 A Logged-In User Session Is Started
     [Documentation]    Opens the browser, navigates to login, and authenticates as a valid user.
+    Ensure The Test Account Exists
     Open Browser To App
     I Am On The Login Page
     I Submit Valid Credentials

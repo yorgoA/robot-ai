@@ -22,7 +22,7 @@ Output:
 import json
 import sys
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 ROOT      = Path(__file__).parent.parent
 OUT_DIR   = ROOT / "tests" / "generated"
@@ -90,7 +90,7 @@ def build_ui_test(issue: dict, feature: str) -> str:
 *** Settings ***
 Documentation     Auto-generated test for GitHub Issue #{number}: {title}
 ...               Source: {body}
-...               Generated: {datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")}
+...               Generated: {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}
 Library           Browser
 Library           ../../external-keywords/OpenCVDebugKeywords.py
 Library           ../../external-keywords/AssertionKeywords.py
@@ -133,7 +133,7 @@ def build_api_test(issue: dict, feature: str) -> str:
     return f"""\
 *** Settings ***
 Documentation     Auto-generated API test for GitHub Issue #{number}: {title}
-...               Generated: {datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")}
+...               Generated: {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}
 Library           RequestsLibrary
 Library           ../../external-keywords/AssertionKeywords.py
 Resource          ../../resources/keywords/given.resource
@@ -172,6 +172,15 @@ def main():
     feature = issue.get("feature", "unknown")
     number  = issue.get("issue_number", 0)
     layers  = plan.get("layers", ["ui"])
+
+    if not plan.get("generate_custom_test", True):
+        print(
+            f"[generate_test] decide_tests.py found existing coverage for '{feature}'; "
+            "skipping generation.",
+            file=sys.stderr,
+        )
+        print(json.dumps({"generated_files": [], "layers": layers, "feature": feature, "issue_number": number}, indent=2))
+        return
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
