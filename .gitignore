@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+rfenv/
+venv/
+.venv/
+
+# Robot Framework output (see scripts/TimestampedReportsListener.py)
+reports/*
+!reports/.gitkeep
+
+# Auto-generated tests (scripts/generate_test.py) - review and move
+# anything worth keeping into tests/ manually
+tests/generated/
+
+# Environment variables
+.env
+
+# OS
+.DS_Store
