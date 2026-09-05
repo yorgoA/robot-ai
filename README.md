@@ -22,6 +22,23 @@ maps that to the matching test tags. From there, one of two things happens:
 `scripts/detect_coverage.py` shows the same coverage picture that `decide_tests.py` uses to
 make that call.
 
+## What's covered
+
+Every user-facing feature in ShopDemo has both a UI suite and an API suite:
+
+| Feature   | UI suite                              | API suite                             |
+|-----------|----------------------------------------|----------------------------------------|
+| Login     | `tests/web/auth/login_scenario.robot`     | `tests/web/api/auth_scenario.robot`     |
+| Register  | `tests/web/auth/register_scenario.robot`  | —                                       |
+| Catalog   | `tests/web/catalog/catalog_scenario.robot`, `product_detail_scenario.robot` | `tests/web/api/products_scenario.robot` |
+| Cart      | `tests/web/cart/cart_checkout_scenario.robot` | `tests/web/api/cart_scenario.robot`   |
+| Checkout  | (part of the cart suite above)         | `tests/web/api/checkout_scenario.robot` |
+| Orders    | `tests/web/orders/orders_scenario.robot` (incl. receipt download) | `tests/web/api/orders_scenario.robot` |
+| Profile   | `tests/web/profile/profile_scenario.robot` (incl. password change) | `tests/web/api/profile_scenario.robot` |
+
+Plus two standalone debug tools (`dom_inspector_test.robot`, `visual_debug_test.robot`) that
+aren't part of the pass/fail suite - see [Project structure](#project-structure).
+
 ---
 
 ## Prerequisites
@@ -110,10 +127,12 @@ After a run, open `reports/"name_of_test/report.html` in a browser.
 robot-ai/
 ├── tests/
 │   ├── web/
-│   │   ├── auth/                    # Login / auth UI scenarios
-│   │   ├── catalog/                 # Product catalog UI scenarios
+│   │   ├── auth/                    # Login + registration UI scenarios
+│   │   ├── catalog/                 # Product catalog + product detail UI scenarios
 │   │   ├── cart/                    # Cart & checkout UI scenarios
-│   │   ├── api/                     # REST API scenarios (auth, products, checkout)
+│   │   ├── orders/                  # Order history + receipt download UI scenarios
+│   │   ├── profile/                 # Profile editing + password change UI scenarios
+│   │   ├── api/                     # REST API scenarios (auth, products, cart, checkout, orders, profile)
 │   │   └── dom_inspector_test.robot # Selector-recommendation debug tool (tagged `debug`)
 │   ├── debug/
 │   │   └── visual_debug_test.robot  # OpenCV screenshot error detection (tagged `debug`)
@@ -190,9 +209,14 @@ comment it would have posted instead of failing outright.
 |--------------|---------|
 | `smoke`      | Fast, critical-path tests; run on every commit |
 | `login`      | Login / auth tests |
-| `catalog`    | Product listing tests |
+| `register`   | Registration tests |
+| `catalog`    | Product listing + product detail tests |
 | `cart`       | Shopping cart tests |
 | `checkout`   | Checkout flow tests |
+| `orders`     | Order history tests |
+| `profile`    | Profile editing tests |
+| `password`   | Password change tests |
+| `receipt`    | Receipt download tests |
 | `api`        | API-layer tests |
 | `ui`         | Browser-based tests |
 | `negative`   | Tests that verify error handling |

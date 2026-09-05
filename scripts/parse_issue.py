@@ -46,6 +46,8 @@ _FEATURE_MAP = {
     "catalog":  {"product", "listing", "catalog", "search", "filter", "sort", "item"},
     "cart":     {"cart", "basket", "add to cart", "remove", "quantity"},
     "checkout": {"checkout", "payment", "order", "purchase", "billing", "shipping", "confirm"},
+    "profile":  {"profile", "account details", "my account", "change password", "current password", "address"},
+    "orders":   {"order history", "my orders", "past orders", "receipt", "order status", "order id"},
 }
 
 

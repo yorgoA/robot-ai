@@ -1,0 +1,16 @@
+*** Variables ***
+${SEL_PROFILE_FORM}              [data-testid="profile-form"]
+${SEL_PROFILE_NAME_INPUT}        [data-testid="profile-name-input"]
+${SEL_PROFILE_EMAIL_INPUT}       [data-testid="profile-email-input"]
+${SEL_PROFILE_ADDRESS_INPUT}     [data-testid="profile-address-input"]
+${SEL_SAVE_PROFILE_BUTTON}       [data-testid="save-profile-button"]
+${SEL_PROFILE_SUCCESS}           [data-testid="profile-success"]
+${SEL_PROFILE_ERROR}             [data-testid="profile-error"]
+
+${SEL_PASSWORD_FORM}                [data-testid="password-form"]
+${SEL_CURRENT_PASSWORD_INPUT}       [data-testid="current-password-input"]
+${SEL_NEW_PASSWORD_INPUT}           [data-testid="new-password-input"]
+${SEL_CONFIRM_NEW_PASSWORD_INPUT}   [data-testid="confirm-new-password-input"]
+${SEL_CHANGE_PASSWORD_BUTTON}       [data-testid="change-password-button"]
+${SEL_PASSWORD_SUCCESS}             [data-testid="password-success"]
+${SEL_PASSWORD_ERROR}               [data-testid="password-error"]

@@ -32,19 +32,24 @@ OUT_DIR   = ROOT / "tests" / "generated"
 # ---------------------------------------------------------------------------
 FEATURE_URLS = {
     "login":    "${BASE_URL}/login",
-    "catalog":  "${BASE_URL}/products",
+    "catalog":  "${BASE_URL}/",
     "cart":     "${BASE_URL}/cart",
-    "checkout": "${BASE_URL}/checkout",
+    "checkout": "${BASE_URL}/cart",
+    "profile":  "${BASE_URL}/profile",
+    "orders":   "${BASE_URL}/orders",
     "unknown":  "${BASE_URL}",
 }
 
-# API endpoints to intercept per feature
+# API endpoints to intercept per feature - ShopDemo's backend mounts routes at
+# root (e.g. /login, /cart/add), there is no /api prefix.
 FEATURE_API_ROUTE = {
-    "login":    "/api/auth/**",
-    "catalog":  "/api/products/**",
-    "cart":     "/api/cart/**",
-    "checkout": "/api/orders/**",
-    "unknown":  "/api/**",
+    "login":    "/login**",
+    "catalog":  "/products/**",
+    "cart":     "/cart/**",
+    "checkout": "/checkout**",
+    "profile":  "/profile/**",
+    "orders":   "/orders**",
+    "unknown":  "/**",
 }
 
 

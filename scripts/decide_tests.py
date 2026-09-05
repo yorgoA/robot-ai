@@ -41,6 +41,8 @@ FEATURE_UI_PATHS = {
     "catalog":  ["tests/web/catalog"],
     "cart":     ["tests/web/cart"],
     "checkout": ["tests/web/cart"],
+    "profile":  ["tests/web/profile"],
+    "orders":   ["tests/web/orders"],
     "unknown":  ["tests/web"],
 }
 
@@ -50,19 +52,23 @@ FEATURE_UI_TAGS = {
     "catalog":  "catalog",
     "cart":     "cart",
     "checkout": "checkout",
+    "profile":  "profile",
+    "orders":   "orders",
     "unknown":  "ui",
 }
 
-# Feature → API tags (all API tests live under tests/api)
+# Feature → API tags (all API tests live under tests/web/api)
 FEATURE_API_TAGS = {
     "login":    "api AND login",
     "catalog":  "api AND catalog",
     "cart":     "api AND cart",
     "checkout": "api AND checkout",
+    "profile":  "api AND profile",
+    "orders":   "api AND orders",
     "unknown":  "api",
 }
 
-API_PATHS = ["tests/api"]
+API_PATHS = ["tests/web/api"]
 
 
 def existing_tags(root: Path) -> set[str]:

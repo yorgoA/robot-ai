@@ -38,7 +38,7 @@ TESTS_ROOT = ROOT / "tests"
 TAG_PATTERN = re.compile(r"\[Tags\]\s+(.+)")
 
 # Canonical feature areas the system knows about
-KNOWN_FEATURES = ["login", "catalog", "cart", "checkout"]
+KNOWN_FEATURES = ["login", "catalog", "cart", "checkout", "profile", "orders"]
 
 
 def extract_keywords(path: Path) -> list[str]:
@@ -66,6 +66,11 @@ def collect_tags(root: Path) -> set[str]:
     return tags
 
 
+# Some feature directories don't share the feature's own name -
+# login tests (and registration) live under tests/web/auth/, not tests/web/login/.
+FEATURE_DIR_ALIASES = {"login": {"auth"}, "catalog": {"products"}}
+
+
 def collect_test_files_by_feature(root: Path) -> dict[str, list[str]]:
     """Group test .robot files by feature area based on their directory path."""
     result: dict[str, list[str]] = {f: [] for f in KNOWN_FEATURES}
@@ -74,7 +79,9 @@ def collect_test_files_by_feature(root: Path) -> dict[str, list[str]]:
         parts = f.parts
         matched = False
         for feature in KNOWN_FEATURES:
-            if feature in parts or feature in str(f).lower():
+            aliases = FEATURE_DIR_ALIASES.get(feature, set())
+            path_str = str(f).lower()
+            if feature in parts or feature in path_str or any(alias in path_str for alias in aliases):
                 result[feature].append(f.name)
                 matched = True
                 break
